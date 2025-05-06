@@ -1,0 +1,81 @@
+1. Spring Boot Data Access (JPA + Hibernate Core)
+✅ What is Spring Data JPA, Hibernate
+
+✅ Creating Entities with @Entity
+
+✅ JPA Annotations:
+@Id, @GeneratedValue
+Relationships: @OneToMany, @ManyToOne, @OneToOne, @ManyToMany
+
+✅ Creating Repositories:
+JpaRepository, CrudRepository
+
+✅ Query Methods:
+Derived Query Methods
+@Query with JPQL
+Native Queries
+
+✅ Pagination and Sorting
+
+✅ Transactions using @Transactional
+
+✅ Flyway or Liquibase DB Migrations (choose one)
+
+2. Advanced JPA
+✅ Criteria API (for dynamic queries)
+
+✅ JPQL vs Native Queries (and best practices)
+
+✅ EntityManager and Manual Queries
+
+✅ Projections (DTO mapping in queries)
+
+3. Auditing
+✅ Enable auditing with @EnableJpaAuditing
+
+✅ @CreatedDate, @LastModifiedDate, @CreatedBy, @LastModifiedBy
+
+✅ AuditorAware implementation
+
+✅ Test auditing behavior
+
+4. REST API & Controller Layer
+✅ @RestController, @GetMapping, etc.
+
+✅ @PathVariable, @RequestParam
+
+✅ Input validation: @Valid, @NotNull, etc.
+
+✅ ResponseEntity and custom responses
+
+✅ Global Exception Handling with @ControllerAdvice
+
+5. Design Principles
+✅ SOLID Principles with real Spring Boot examples
+
+✅ Layered architecture: Controller → Service → Repository → DB
+
+✅ DTO, Mapper, Utility packages
+
+6. Logging
+✅ Logging with SLF4J and Logback
+
+✅ Best practices for logging in services/controllers
+
+✅ Custom log formats and saving logs to files
+
+7. Optional (Nice to have)
+🔄 ModelMapper or MapStruct (for mapping DTO ↔ Entity)
+
+🔒 Spring Security (if time permits)
+
+🧪 JUnit Testing + Mockito
+
+📦 Remaining JPA Topics for Project Purpose
+Entity lifecycle events (@PrePersist, @PreUpdate)
+
+Soft delete using @SQLDelete and @Where
+
+Custom Repository methods
+
+DTO Projections with constructor expressions
