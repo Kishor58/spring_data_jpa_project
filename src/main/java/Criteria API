@@ -1,0 +1,259 @@
+🔶 What is Criteria API?
+Criteria API is a Java-based way to build SQL-like queries dynamically using code,
+not plain strings.
+
+🔷 Why use Criteria API instead of JPQL?
+| JPQL / SQL String          | Criteria API                              |
+| -------------------------- | ----------------------------------------- |
+| Written as a string        | Built using Java methods and objects      |
+| Hard to change dynamically | Easy to add/remove conditions dynamically |
+| Error found at runtime     | Type-safe (errors found at compile time)  |
+
+✅ Criteria API is most useful when:
+
+You need dynamic filters (like search filters from a form)
+
+You don’t want to write complex string-based queries
+
+You want type-safety (compiler checks the fields/entities)
+
+********************************************************************************************************
+
+🔑 Main Parts of Criteria API (Explained Simply)
+1. ✅ CriteriaBuilder – Factory to build queries
+2. ✅ CriteriaQuery<T> – The query you are building
+3. ✅ Root<T> – Represents the entity/table you're querying
+4. ✅ Predicate – WHERE clause conditions
+5. ✅ TypedQuery<T> – To execute the query
+
+
+
+🔷 What is CriteriaBuilder?
+CriteriaBuilder is a helper/factory class provided by JPA (Java Persistence API) to help you dynamically build queries
+using Java code instead of hardcoded SQL/JPQL strings.
+
+It is the first step when using the Criteria API.
+
+🧩 Where do we get CriteriaBuilder?
+You get it from the EntityManager like this:
+CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+📌 EntityManager is the main interface to interact with the database in JPA.
+   It gives you the CriteriaBuilder.
+
+💡 Why do we use CriteriaBuilder?
+Because it helps you build:
+
+1.CriteriaQuery<T> – the actual query (SELECT, DELETE, etc.)
+2.Predicate – conditions (like WHERE)
+3.Order – sorting (ORDER BY)
+4.Functions – like count, max, min, etc.
+
+✅ It lets you write type-safe, dynamic, SQL-like queries in Java.
+
+📦 What can you build with CriteriaBuilder?
+| Purpose            | Method Example                                 |
+| ------------------ | ---------------------------------------------- |
+| Create query       | `createQuery(User.class)`                      |
+| Equal condition    | `cb.equal(root.get("field"), value)`           |
+| Like condition     | `cb.like(root.get("name"), "%john%")`          |
+| Greater than       | `cb.greaterThan(root.get("age"), 25)`          |
+| Combine conditions | `cb.and(...)`, `cb.or(...)`                    |
+| Sorting            | `cb.asc(root.get("field"))`, `cb.desc(...)`    |
+| Aggregates         | `cb.count(root)`, `cb.sum(...)`, `cb.avg(...)` |
+| Math operations    | `cb.prod(...)`, `cb.diff(...)`                 |
+| Null checks        | `cb.isNull(...)`, `cb.isNotNull(...)`          |
+-------------------------------------------------------------------------
+
+What is a Predicate?
+A Predicate in Criteria API is like a condition or a filter — just like the WHERE clause in SQL.
+
+✅ You use Predicate to build conditions like:
+
+WHERE city = 'Pune'
+
+WHERE age > 25 AND gender = 'Male'
+
+WHERE name LIKE 'A%' OR city = 'Delhi'
+
+🧱 Created Using CriteriaBuilder:
+Here’s how you build basic predicates:
+
+Predicate p1 = cb.equal(root.get("city"), "Pune");
+Predicate p2 = cb.greaterThan(root.get("age"), 25);
+Predicate p3 = cb.like(root.get("name"), "A%");
+
+Predicate combined = cb.and(p1, p2); // city = 'Pune' AND age > 25
+Predicate either = cb.or(p2, p3);    // age > 25 OR name LIKE 'A%'
+
+
+📘 Common Predicate Methods:
+
+| Method             | Usage Example                            | Description                   |
+| ------------------ | ---------------------------------------- | ----------------------------- |
+| `cb.equal()`       | `cb.equal(root.get("field"), value)`     | field = value                 |
+| `cb.notEqual()`    | `cb.notEqual(root.get("field"), value)`  | field != value                |
+| `cb.greaterThan()` | `cb.greaterThan(root.get("age"), 25)`    | field > 25                    |
+| `cb.lessThan()`    | `cb.lessThan(root.get("salary"), 50000)` | field < 50000                 |
+| `cb.like()`        | `cb.like(root.get("name"), "A%")`        | field LIKE "A%"               |
+| `cb.between()`     | `cb.between(root.get("age"), 20, 30)`    | field BETWEEN 20 AND 30       |
+| `cb.and(p1, p2)`   | `cb.and(condition1, condition2)`         | Combines two or more with AND |
+| `cb.or(p1, p2)`    | `cb.or(condition1, condition2)`          | Combines two or more with OR  |
+--------------------------------------------------------------------------------------------------
+
+1. Dynamic Sorting using Criteria API
+🧠 Concept:
+You can sort results by any column dynamically using:
+
+CriteriaBuilder.asc() → ASCENDING order
+
+CriteriaBuilder.desc() → DESCENDING order
+
+2. Pagination using Criteria API
+🧠 Concept:
+You use Query.setFirstResult(offset) and setMaxResults(limit) to control how many rows you get and where to start.
+
+| Feature    | Method Used                               |
+| ---------- | ----------------------------------------- |
+| Ascending  | `cb.asc(root.get("field"))`               |
+| Descending | `cb.desc(root.get("field"))`              |
+| Pagination | `.setFirstResult(x)`, `.setMaxResults(y)` |
+-----------------------------------------------------------
+
+🔍 What is a Join in Criteria API?
+A join allows you to query across related entities. For example:
+
+Get all users and their roles
+
+Get books with their authors
+
+Get orders with customer details
+
+In SQL, this would be like:
+
+SELECT * FROM user u JOIN role r ON u.role_id = r.id;
+---------------------------------------------------------
+
+🔁 Types of Joins in JPA Criteria API
+
+✅ 1. INNER JOIN (Default)
+Meaning: Returns only records that have a match in both tables.
+How to write:
+Join<User, Department> join = userRoot.join("department");
+// OR
+Join<User, Department> join = userRoot.join("department", JoinType.INNER);
+
+✅ 2. LEFT JOIN (a.k.a. LEFT OUTER JOIN)
+Meaning: Returns all records from the left table (User), and matched records from the right table (Department). If no match, the right side is null.
+
+How to write:
+Join<User, Department> join = userRoot.join("department", JoinType.LEFT);
+
+✅ 3. RIGHT JOIN (a.k.a. RIGHT OUTER JOIN)
+Meaning: Returns all records from the right table (Department), and matched records from the left table (User). If no match, the left side is null.
+
+How to write:
+Join<User, Department> join = userRoot.join("department", JoinType.RIGHT);
+
+🔍 What is a Fetch Join?
+A fetch join is used in JPQL to eagerly load associated entities in a single query, avoiding the N+1 select problem.
+
+🧠 Why Use Fetch Join?
+Normally, JPA uses lazy loading for relationships like @OneToMany, @ManyToOne. That means when you fetch a User, its roles won’t be loaded until accessed — triggering a separate SQL query for each user.
+
+This leads to:
+
+❌ Performance issue: N+1 problem (1 query to get N users, then N queries to get each user’s roles)
+
+✅ Fetch join solves this by loading all related entities in one query.
+
+✅ Syntax of Fetch Join (JPQL)
+@Query("SELECT u FROM User u JOIN FETCH u.roles WHERE u.id = :id")
+User findUserWithRoles(@Param("id") Long id);
+
+⚠️ Notes:
+You must use fetch join only in JPQL (@Query).
+
+You cannot use fetch in native SQL or Criteria API directly.
+
+Do not use multiple collection fetch joins in the same query — it can lead to cartesian product issues (duplicate data).
+-------------------------------------------------------------------------
+
+🧠 Why use .fetch() instead of .join()?
+.join() = just joining tables, but still lazy loads associations.
+
+.fetch() = joining and eager loading the relationship in one query.
+
+When you use:
+userRoot.fetch("department", JoinType.INNER);
+
+It generates SQL like:
+SELECT u.*, d.* FROM user u
+INNER JOIN department d ON u.department_id = d.id
+
+🧠 When to Use .join()
+Use .join() when:
+
+You want to filter based on a related entity's column.
+
+You don’t need to return the related object immediately.
+
+You want full control over what to fetch.
+
+✅ Example:
+Join<User, Department> deptJoin = userRoot.join("department");
+cq.where(cb.equal(deptJoin.get("name"), "IT"));
+---------------------------------------------------------
+🧠 When to Use .fetch()
+Use .fetch() when:
+
+You want to eagerly load a related entity to avoid N+1 select problem.
+
+You want to include the related data in the same query.
+
+You’re returning full entity objects, not DTOs.
+
+✅ Example:
+userRoot.fetch("department", JoinType.LEFT);
+
+⚠️ Be Careful When
+Using .fetch() with collection relationships (@OneToMany) — it may cause duplication, so use .distinct(true) in those cases.
+
+Using both .join() and .fetch() — use .join() for filtering and .fetch() for loading only when needed.
+
+
+✅ What does eagerly load mean?
+Eager loading means:
+
+Load the main entity AND all its related entities (like foreign key objects) immediately in the same query.
+
+🧠 Simple Example:
+Let’s say you have two entities:
+
+User (with a department field)
+
+Department
+
+class User {
+   Long id;
+   String name;
+   Department department;
+}
+
+
+🟦 Case 1: Eager Loading
+When you fetch a User, JPA also fetches the Department automatically, at the same time.
+
+👉 SQL Generated:
+SELECT u.*, d.* FROM user u
+JOIN department d ON u.department_id = d.id
+
+✅ Both User and Department are loaded together.
+
+🟥 Case 2: Lazy Loading
+When you fetch a User, JPA only fetches the user data.
+
+👉 SQL: SELECT * FROM user;
+
+
+
+

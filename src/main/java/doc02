@@ -1,0 +1,86 @@
+1. Using EntityManager in Spring Boot
+🔸 What is EntityManager?
+EntityManager is the core interface provided by JPA for interacting with the persistence context. It manages CRUD operations, queries (JPQL/native), transactions, and more — giving you low-level control over database interactions.
+
+🔸 Why and When to Use EntityManager?
+Use Case	Why
+Complex dynamic queries	More control than Spring Data repository methods
+When you need raw SQL	e.g., vendor-specific SQL or performance tuning
+Batch updates/deletes	Avoid loading entities just to modify/delete
+DTO Projections	Customize result shape without entity mapping
+Full control on flush/clear operations	For performance or custom logic
+
+🔸 How to Get an EntityManager in Spring Boot?
+There are two common ways:
+
+✅ Option 1: Use @PersistenceContext (Recommended for JPA)
+
+@Service
+public class BookService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    // You can now use entityManager inside methods
+}
+@PersistenceContext ensures proper transaction handling and works smoothly with Spring Data JPA.
+
+Injects a proxy-safe, thread-safe instance of EntityManager.
+
+✅ Option 2: Use Constructor Injection (Optional)
+
+@Service
+public class BookService {
+    private final EntityManager entityManager;
+
+    public BookService(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+}
+ℹ️ @PersistenceContext is preferred when you're working in container-managed environments (like Spring), while constructor injection may be useful for testing.
+
+🔸 Common Methods of EntityManager
+
+| Method                          | Purpose             | Arguments                 | Returns         |
+| ------------------------------- | ------------------- | ------------------------- | --------------- |
+| `persist(entity)`               | Insert new entity   | Entity object             | `void`          |
+| `find(Class, id)`               | Get by ID           | Entity class, Primary key | Entity          |
+| `merge(entity)`                 | Update existing     | Entity object             | Managed entity  |
+| `remove(entity)`                | Delete              | Managed Entity object     | `void`          |
+| `createQuery(jpql, class)`      | Typed JPQL query    | JPQL string, Entity class | `TypedQuery<T>` |
+| `createQuery(jpql)`             | Un-typed JPQL query | JPQL string               | `Query`         |
+| `createNativeQuery(sql, class)` | Raw SQL query       | SQL string, Entity class  | `Query`         |
+--------------------------------------------------------------------------------------------------------
+
+-->What is TypedQuery<T>?
+TypedQuery<T> is a type-safe query interface provided by JPA for JPQL queries.
+It allows you to specify the type of result you're expecting — e.g., User, Book, etc.
+
+This means:
+
+You don’t need to cast the result later.
+
+Compile-time safety (you catch mistakes early).
+
+ Common Methods in TypedQuery:
+
+ | Method                      | Purpose                                          | Returns         |
+ | --------------------------- | ------------------------------------------------ | --------------- |
+ | `getResultList()`           | Fetch **all results**                            | `List<T>`       |
+ | `getSingleResult()`         | Fetch **only one result**                        | `T`             |
+ | `setParameter(name, value)` | Set named (`:param`) or indexed (`?1`) parameter | `TypedQuery<T>` |
+ | `setFirstResult(offset)`    | Set the offset (for pagination)                  | `TypedQuery<T>` |
+ | `setMaxResults(limit)`      | Limit number of results                          | `TypedQuery<T>` |
+
+
+Why Not Just Use find() or getResultList()?
+You can retrieve results directly using find() for a single entity or getResultList() for multiple results, but TypedQuery provides several advantages:
+
+Type Safety: Avoids casting issues.
+
+Query Flexibility: Works with both JPQL and native SQL.
+
+Advanced Features: Provides features like pagination, sorting, and parameterized queries.
+
+Cleaner and Maintainable Code: Makes your queries easier to read and understand.
+

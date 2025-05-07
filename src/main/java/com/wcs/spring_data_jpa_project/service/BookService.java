@@ -47,7 +47,7 @@ public class BookService {
     }
 
     public Page<Book> getBooksByAuthor(String authorName, int page, int size, String sortField, String sortDirection) {
-        Sort.Direction direction = Sort.Direction.fromString(sortDirection);//Here it is taking one input from user asc or desc that convert for Assending or Dessending order
+        Sort.Direction direction = Sort.Direction.fromString(sortDirection.trim());//Here it is taking one input from user asc or desc that convert for Assending or Dessending order
 
         Sort sort = Sort.by(direction, sortField); // Sort.by method are used to check the direct means asc or desc as well as which column we want to sort that also it took.
 
