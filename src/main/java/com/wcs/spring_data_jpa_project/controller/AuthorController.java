@@ -2,7 +2,7 @@ package com.wcs.spring_data_jpa_project.controller;
 
 import com.wcs.spring_data_jpa_project.model.Author;
 import com.wcs.spring_data_jpa_project.model.Book;
-import com.wcs.spring_data_jpa_project.service.AuthorService;
+import com.wcs.spring_data_jpa_project.service.core.AuthorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

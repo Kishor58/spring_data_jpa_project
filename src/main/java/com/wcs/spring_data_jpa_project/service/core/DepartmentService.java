@@ -1,4 +1,4 @@
-package com.wcs.spring_data_jpa_project.service;
+package com.wcs.spring_data_jpa_project.service.core;
 
 import com.wcs.spring_data_jpa_project.model.Department;
 import jakarta.persistence.EntityManager;

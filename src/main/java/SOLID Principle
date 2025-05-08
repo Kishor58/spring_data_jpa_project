@@ -1,0 +1,37 @@
+1. SOLID Principles with Spring Boot Examples
+
+1.1) S — Single Responsibility Principle :- A class should have only one reason to change.
+
+Example:
+
+UserService.java: handles business logic
+
+UserController.java: handles HTTP requests
+
+UserRepository.java: handles DB interaction
+
+1.2) O — Open/Closed Principle :-Classes should be open for extension, but closed for modification.
+
+Example: Add sorting functionality using strategy pattern without modifying existing code.
+
+1.3) L — Liskov Substitution Principle :- Subtypes must be substitutable for their base types.
+     Example: User and Admin can both be used where Person is expected.
+
+1.4) I — Interface Segregation Principle :-Don’t force a class to implement methods it does not use.
+
+     Example: Multiple interfaces for different responsibilities.
+
+D — Dependency Inversion Principle :- High-level modules should not depend on low-level modules; both should depend on abstractions.
+
+Example: Use interfaces in services and inject implementations using @Autowired.
+
+
+| Principle                       | Summary                                                 | Spring Boot Example                                                                            |
+| ------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **S** – *Single Responsibility* | Each class should do one thing                          | `UserController` handles requests, `UserService` has logic, `UserRepository` interacts with DB |
+| **O** – *Open/Closed*           | Classes should be extendable without changing them      | Use interfaces and add new implementations (e.g., sorting strategies)                          |
+| **L** – *Liskov Substitution*   | Subclasses should replace parent classes without issues | `Admin` and `User` can both extend `Person` and be used interchangeably                        |
+| **I** – *Interface Segregation* | Split big interfaces into smaller ones                  | Use separate interfaces for `Readable`, `Writable`, etc.                                       |
+| **D** – *Dependency Inversion*  | Depend on interfaces, not concrete classes              | Inject `NotificationService` (interface) into service layer                                    |
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+

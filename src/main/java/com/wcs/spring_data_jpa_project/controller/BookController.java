@@ -1,7 +1,7 @@
 package com.wcs.spring_data_jpa_project.controller;
 
 import com.wcs.spring_data_jpa_project.model.Book;
-import com.wcs.spring_data_jpa_project.service.BookService;
+import com.wcs.spring_data_jpa_project.service.core.BookService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;

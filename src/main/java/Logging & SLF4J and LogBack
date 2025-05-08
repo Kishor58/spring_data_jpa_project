@@ -1,0 +1,125 @@
+1. What is Logging?
+Logging is the process of recording application events or messages at runtime. It's very important for:
+
+Debugging: It helps you track down issues or bugs.
+
+Monitoring: Helps you understand how your application behaves in production.
+
+Auditing: To keep track of user activities or sensitive operations.
+
+Logging can be done at various levels of detail, and it's common to use different levels depending on the severity of the event, such as:
+
+INFO: For general events, like user logins or processing requests.
+
+DEBUG: For detailed information useful for debugging (e.g., variables' values, flow of execution).
+
+ERROR: When an error occurs (e.g., exceptions or failed operations).
+
+2. SLF4J and Logback
+
+2.1 SLF4J (Simple Logging Facade for Java) is an abstraction layer for logging. It provides a simple interface to
+    various logging frameworks (Logback, Log4j, etc.), so you can swap logging implementations without changing your code.
+
+2.2 Logback is a popular logging framework for Java applications. It's often used in combination with
+    SLF4J in Spring Boot projects.
+
+Spring Boot uses SLF4J with Logback as the default logging framework. You don't have to do anything special to
+get started with logging in a Spring Boot application, as they are already included.
+
+3. How Does Logging Work in Spring Boot?
+Spring Boot comes pre-configured with SLF4J and Logback, so you can start using them right away.
+The default logging configuration logs messages to the console and to a log file (spring.log).
+
+You can write log messages using SLF4J’s Logger API and Logback will manage how they are outputted.
+
+-----------------------------------------------------------------------------------------------------------------
+
+4. How to Use Logging in Spring Boot?
+Step 1: Add Logger to Your Class
+To log messages, you need to declare a logger in your class.
+
+In Java, you do this by using LoggerFactory to create a logger instance. It’s usually declared as a static final field.
+
+🔹 Step-by-Step: Using Logging in Spring Boot
+
+1. Import the Logger
+Use org.slf4j.Logger and LoggerFactory:
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+2. Create a Logger Instance
+Inside your class:
+private static final Logger log = LoggerFactory.getLogger(YourClassName.class);
+
+3. Log at Different Levels
+log.trace("This is a TRACE log");
+log.debug("This is a DEBUG log");
+log.info("This is an INFO log");
+log.warn("This is a WARN log");
+log.error("This is an ERROR log");
+
+
+----------------------------------------------------------------------------------------------
+
+1. Logging (General Concept):
+Definition: "Logging" refers to the practice of recording events, messages, and information about the runtime behavior
+of a program, typically for purposes such as debugging, monitoring, and troubleshooting.
+
+Purpose: The goal of logging is to capture and report events that occur during the execution of a program. This
+information can help developers track down bugs, understand the flow of the application, or monitor the health of an application in production.
+
+Log Levels: Logging is done using various levels like INFO, ERROR, DEBUG, WARN, etc., to categorize the severity
+or importance of the logged messages.
+
+Technologies: Logging can be implemented using different frameworks or libraries in various programming languages.
+In Java, common logging APIs include Java Util Logging, Log4j, SLF4J, and Logback.
+
+Example: Logging is a concept, and it doesn't refer to a specific tool or library. When we say "logging," we might
+be talking about the act of writing messages to a file, database, or console.
+
+Key Points:
+
+Logging refers to the action of recording events or messages.
+
+Can be implemented using different libraries or tools (like SLF4J, Log4j, Java Util Logging, etc.).
+
+Focuses on capturing and managing runtime information in an application.
+
+
+//LogBack i have to implement till i have implement only the Logging
+
+2. Logback (Specific Logging Framework):
+Definition: Logback is a specific, highly-efficient logging framework for Java applications. It is often used
+in conjunction with SLF4J (Simple Logging Facade for Java) as its logging backend.
+
+Purpose: Logback is a logging implementation that provides advanced features for logging in Java, including
+efficient log file management, asynchronous logging, MDC (Mapped Diagnostic Context), and rolling log files.
+
+Logback vs Log4j: Logback is the successor to Log4j and is often considered superior in terms of performance,
+configuration, and features.
+
+Features:
+
+Asynchronous logging (improves performance).
+
+File rotation and archiving (automatic log file management).
+
+MDC support (helps track contextual information across logs, like session IDs, user IDs).
+
+Flexible configuration (using XML or Groovy files).
+
+SLF4J integration (works seamlessly with SLF4J, so you can switch backends without changing your code).
+
+Configuration: Logback is typically configured using an XML (logback.xml) or Groovy (logback.groovy)
+configuration file where you define logging levels, appenders, and other settings.
+
+Example: Logback is a framework that you can use to implement logging in your Java application. It's
+an implementation that provides the mechanics and functionality for how the logs will be written, formatted, and stored.
+
+Key Points:
+
+Logback is a specific logging framework used for implementing logging in Java applications.
+
+It provides a powerful set of features for managing logs (e.g., rolling files, asynchronous logging, MDC).
+
+It is used with SLF4J, which provides a common interface for logging in Java.

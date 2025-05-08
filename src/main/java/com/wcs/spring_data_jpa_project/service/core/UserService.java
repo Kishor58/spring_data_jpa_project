@@ -1,0 +1,308 @@
+package com.wcs.spring_data_jpa_project.service.core;
+
+import com.wcs.spring_data_jpa_project.dto.LoginRequest;
+import com.wcs.spring_data_jpa_project.dto.RegisterRequest;
+import com.wcs.spring_data_jpa_project.dto.UserDeptDTO;
+import com.wcs.spring_data_jpa_project.dto.UserSummaryDTO;
+import com.wcs.spring_data_jpa_project.exception.*;
+import com.wcs.spring_data_jpa_project.model.Department;
+import com.wcs.spring_data_jpa_project.model.User;
+import jakarta.persistence.*;
+import jakarta.persistence.criteria.*;
+import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Transactional
+@Slf4j
+public class UserService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public User registerUser(RegisterRequest request) {
+        User user = new User();
+        user.setUserName(request.getUserName());
+        user.setEmail(request.getEmail());
+        user.setAddress(request.getAddress());
+        user.setContact(request.getContact());
+        user.setPassword(request.getPassword()); // For demo only, no encryption
+
+        entityManager.persist(user);
+        log.info("User registered: {}", user.getEmail());
+        return user;
+    }
+
+
+    public boolean loginUser(LoginRequest request) {
+        try {
+            String jpql = "SELECT u FROM User u WHERE u.email = :email";
+            TypedQuery<User> query = entityManager.createQuery(jpql, User.class);
+            query.setParameter("email", request.getEmail());
+            User user = query.getSingleResult();
+
+            boolean matched = user.getPassword().equals(request.getPassword()); // No encryption here
+            log.info("Login attempt for {} - Success: {}", request.getEmail(), matched);
+            return matched;
+        } catch (NoResultException e) {
+            log.error("Login failed: No user with email {}", request.getEmail());
+            return false;
+        }
+    }
+
+    public void saveUser(User user) {
+        if (user == null) {
+            log.error("Attempt to save a null user");
+            throw new InvalidInputException("User data must not be null");
+        }
+        log.info("Saving user: {}", user.getUserName());
+        entityManager.persist(user);
+    }
+
+    public User getUserById(Long id) {
+        log.debug("Fetching user by ID: {}", id);
+        User user = entityManager.find(User.class, id);
+        if (user == null) {
+            log.error("User with ID {} not found", id);
+            throw new UserNotFoundException("User with ID " + id + " not found");
+        }
+        return user;
+    }
+
+    public User updateUser(User user) {
+        if (user == null || user.getId() == null) {
+            log.error("Invalid user input for update: {}", user);
+            throw new InvalidInputException("User or ID must not be null for update");
+        }
+
+        User existingUser = entityManager.find(User.class, user.getId());
+        if (existingUser == null) {
+            log.error("User with ID {} not found for update", user.getId());
+            throw new UserNotFoundException("Cannot update: User with ID " + user.getId() + " does not exist");
+        }
+
+        log.info("Updating user: {}", user.getUserName());
+        return entityManager.merge(user);
+    }
+
+    public void deleteUser(Long id) {
+        log.warn("Attempting to delete user with ID: {}", id);
+        User user = entityManager.find(User.class, id);
+        if (user == null) {
+            log.error("User with ID {} not found for deletion", id);
+            throw new UserNotFoundException("User with ID " + id + " not found for deletion");
+        }
+        entityManager.remove(user);
+        log.info("User with ID {} deleted successfully", id);
+    }
+
+    public User assignUserToDepartment(Long userId, Long departmentId) {
+        log.info("Assigning user {} to department {}", userId, departmentId);
+        User user = entityManager.find(User.class, userId);
+        if (user == null) {
+            log.error("User with ID {} not found", userId);
+            throw new UserNotFoundException("User not found with ID: " + userId);
+        }
+
+        Department department = entityManager.find(Department.class, departmentId);
+        if (department == null) {
+            log.error("Department with ID {} not found", departmentId);
+            throw new DepartmentNotFoundException("Department not found with ID: " + departmentId);
+        }
+
+        user.setDepartment(department);
+        log.info("User {} successfully assigned to department {}", userId, departmentId);
+        return entityManager.merge(user);
+    }
+
+    public List<User> getAllUsers() {
+        log.debug("Fetching all users");
+        return entityManager.createQuery("SELECT u FROM User u", User.class).getResultList();
+    }
+
+    public List<User> getUsersByCity(String city) {
+        log.debug("Fetching users by city: {}", city);
+        if (city == null || city.trim().isEmpty()) {
+            log.error("City parameter is invalid: {}", city);
+            throw new InvalidInputException("City must not be null or empty");
+        }
+
+        String jpql = "SELECT u FROM User u WHERE u.address = :city";
+        return entityManager.createQuery(jpql, User.class)
+                .setParameter("city", city)
+                .getResultList();
+    }
+
+    public Long countUsersByEmailDomain(String domain) {
+        log.debug("Counting users by email domain: {}", domain);
+        if (domain == null || domain.trim().isEmpty()) {
+            log.error("Email domain is invalid: {}", domain);
+            throw new InvalidInputException("Domain must not be null or empty");
+        }
+
+        String jpql = "SELECT COUNT(u) FROM User u WHERE u.email LIKE :domain";
+        return entityManager.createQuery(jpql, Long.class)
+                .setParameter("domain", "%" + domain)
+                .getSingleResult();
+    }
+
+    public List<User> getUsersNative() {
+        log.debug("Fetching all users using native SQL");
+        String sql = "SELECT * FROM User";
+        Query query = entityManager.createNativeQuery(sql, User.class);
+        return query.getResultList();
+    }
+
+    public List<User> getUsersByCitySorted(String city) {
+        log.debug("Fetching sorted users by city: {}", city);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> query = cb.createQuery(User.class);
+        Root<User> root = query.from(User.class);
+
+        query.select(root)
+                .where(cb.equal(root.get("address"), city))
+                .orderBy(cb.desc(root.get("userName")));
+
+        return entityManager.createQuery(query).getResultList();
+    }
+
+    public int updateEmailsByCity(String city, String newEmail) {
+        log.info("Updating emails in city: {} to {}", city, newEmail);
+        if (city == null || newEmail == null) {
+            log.error("Invalid input for email update: city={}, email={}", city, newEmail);
+            throw new InvalidInputException("City and email must not be null");
+        }
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaUpdate<User> update = cb.createCriteriaUpdate(User.class);
+        Root<User> root = update.from(User.class);
+
+        update.set("email", newEmail)
+                .where(cb.equal(root.get("address"), city));
+
+        return entityManager.createQuery(update).executeUpdate();
+    }
+
+    public int deleteUsersByCity(String city) {
+        log.warn("Deleting users in city: {}", city);
+        if (city == null || city.isBlank()) {
+            log.error("City must not be blank for deleteUsersByCity");
+            throw new InvalidInputException("City must not be null or blank");
+        }
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaDelete<User> delete = cb.createCriteriaDelete(User.class);
+        Root<User> root = delete.from(User.class);
+
+        delete.where(cb.equal(root.get("address"), city));
+        return entityManager.createQuery(delete).executeUpdate();
+    }
+
+    public List<User> getFilteredUsers(String city, String contact) {
+        log.debug("Filtering users by city: {} and contact: {}", city, contact);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+
+        cq.select(root)
+                .where(cb.and(
+                        cb.equal(root.get("address"), city),
+                        cb.like(root.get("contact"), contact + "%")
+                ));
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<User> getUsersSortedByNameAsc() {
+        log.debug("Sorting users by name ascending");
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+
+        cq.orderBy(cb.asc(root.get("userName")));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<User> getUsersSortedByEmailDesc() {
+        log.debug("Sorting users by email descending");
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+
+        cq.orderBy(cb.desc(root.get("email")));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<User> getUsersPaginated(int pageNo, int pageSize) {
+        log.debug("Fetching users with pagination - page: {}, size: {}", pageNo, pageSize);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+        cq.select(root);
+
+        int offset = (pageNo - 1) * pageSize;
+
+        return entityManager.createQuery(cq)
+                .setFirstResult(offset)
+                .setMaxResults(pageSize)
+                .getResultList();
+    }
+
+    public List<User> getUsersWithDepartments() {
+        log.debug("Fetching users with department (INNER JOIN)");
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+        root.fetch("department", JoinType.INNER);
+        cq.select(root).distinct(true);
+
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<User> getUsersByDepartmentName(String deptName) {
+        log.debug("Fetching users by department name: {}", deptName);
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+        Join<User, Department> join = root.join("department");
+
+        cq.where(cb.equal(join.get("deptName"), deptName));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<User> getUsersSortedByDepartmentName() {
+        log.debug("Sorting users by department name descending");
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+        Join<User, Department> join = root.join("department");
+
+        cq.select(root).orderBy(cb.desc(join.get("deptName")));
+        return entityManager.createQuery(cq).getResultList();
+    }
+
+    public List<UserSummaryDTO> getUserSummary() {
+        log.debug("Fetching user summary using DTO projection");
+        String jpql = "SELECT u.userName AS userName, u.email AS email, u.contact AS contact FROM User u";
+        return entityManager.createQuery(jpql, UserSummaryDTO.class).getResultList();
+    }
+
+    public List<UserSummaryDTO> getUserSummaryByCity(String city) {
+        log.debug("Fetching user summary by city: {}", city);
+        String jpql = "SELECT new com.wcs.spring_data_jpa_project.dto.UserSummaryDTO(u.userName, u.email) " +
+                "FROM User u WHERE u.address = :city";
+        return entityManager.createQuery(jpql, UserSummaryDTO.class)
+                .setParameter("city", city)
+                .getResultList();
+    }
+
+    public List<UserDeptDTO> getUserDepartmentDetails() {
+        log.debug("Fetching user-department DTO projection");
+        String jpql = "SELECT new com.wcs.spring_data_jpa_project.dto.UserDeptDTO(u.userName, u.email, d.deptName) " +
+                "FROM User u JOIN u.department d";
+        return entityManager.createQuery(jpql, UserDeptDTO.class).getResultList();
+    }
+}

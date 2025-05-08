@@ -2,7 +2,7 @@ package com.wcs.spring_data_jpa_project.controller;
 
 import com.wcs.spring_data_jpa_project.customeResponse.ApiResponse;
 import com.wcs.spring_data_jpa_project.model.Department;
-import com.wcs.spring_data_jpa_project.service.DepartmentService;
+import com.wcs.spring_data_jpa_project.service.core.DepartmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
