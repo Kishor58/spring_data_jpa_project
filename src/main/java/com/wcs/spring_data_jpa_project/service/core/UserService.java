@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,33 +25,84 @@ public class UserService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @Autowired
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Autowired
+    private EmailService emailService;
+
+
     public User registerUser(RegisterRequest request) {
+        if (request == null || request.getEmail() == null) {
+            log.error("Invalid registration request");
+            throw new InvalidInputException("Registration request or email cannot be null");
+        }
+
+        String emailCheckQuery = "SELECT COUNT(u) FROM User u WHERE u.email = :email";
+        Long count = entityManager.createQuery(emailCheckQuery, Long.class)
+                .setParameter("email", request.getEmail())
+                .getSingleResult();
+
+        if (count != null && count > 0) {
+            log.error("Registration failed - Email already in use: {}", request.getEmail());
+            throw new DuplicateResourceException("Email already registered");
+        }
+
         User user = new User();
         user.setUserName(request.getUserName());
         user.setEmail(request.getEmail());
         user.setAddress(request.getAddress());
         user.setContact(request.getContact());
-        user.setPassword(request.getPassword()); // For demo only, no encryption
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         entityManager.persist(user);
-        log.info("User registered: {}", user.getEmail());
+        log.info("User registered successfully: {}", user.getEmail());
+
+        // ✅ Send registration email
+        emailService.sendEmail(
+                user.getEmail(),
+                "Welcome to Our App!",
+                "Hi " + user.getUserName() + ",\n\nThanks for registering with us. We're glad to have you!"
+        );
+
         return user;
     }
 
-
     public boolean loginUser(LoginRequest request) {
+        if (request == null || request.getEmail() == null || request.getPassword() == null) {
+            log.error("Invalid login request: {}", request);
+            throw new InvalidInputException("Email and password must not be null");
+        }
+
         try {
             String jpql = "SELECT u FROM User u WHERE u.email = :email";
             TypedQuery<User> query = entityManager.createQuery(jpql, User.class);
             query.setParameter("email", request.getEmail());
             User user = query.getSingleResult();
 
-            boolean matched = user.getPassword().equals(request.getPassword()); // No encryption here
-            log.info("Login attempt for {} - Success: {}", request.getEmail(), matched);
-            return matched;
+            boolean matched = passwordEncoder.matches(request.getPassword(), user.getPassword());
+            if (matched) {
+                log.info("Login successful for: {}", request.getEmail());
+
+                // ✅ Send login notification email
+                emailService.sendEmail(
+                        user.getEmail(),
+                        "Login Notification",
+                        "Hi " + user.getUserName() + ",\n\nYou have successfully logged into your account."
+                );
+
+                return true;
+            } else {
+                log.warn("Login failed - Incorrect password for: {}", request.getEmail());
+                throw new InvalidCredentialsException("Invalid email or password");
+            }
         } catch (NoResultException e) {
-            log.error("Login failed: No user with email {}", request.getEmail());
-            return false;
+            log.error("Login failed - User not found: {}", request.getEmail());
+            throw new InvalidCredentialsException("Invalid email or password");
         }
     }
 
@@ -103,7 +156,7 @@ public class UserService {
         log.info("Assigning user {} to department {}", userId, departmentId);
         User user = entityManager.find(User.class, userId);
         if (user == null) {
-            log.error("User with ID {} not found", userId);
+            log.error("User with ID  {} not found", userId);
             throw new UserNotFoundException("User not found with ID: " + userId);
         }
 
@@ -286,9 +339,14 @@ public class UserService {
 
     public List<UserSummaryDTO> getUserSummary() {
         log.debug("Fetching user summary using DTO projection");
-        String jpql = "SELECT u.userName AS userName, u.email AS email, u.contact AS contact FROM User u";
-        return entityManager.createQuery(jpql, UserSummaryDTO.class).getResultList();
+
+        String jpql = "SELECT new com.wcs.spring_data_jpa_project.dto.UserSummaryDTO(u.userName, u.email, d.deptName) " +
+                "FROM User u JOIN u.department d";
+
+        return entityManager.createQuery(jpql, UserSummaryDTO.class)
+                .getResultList();
     }
+
 
     public List<UserSummaryDTO> getUserSummaryByCity(String city) {
         log.debug("Fetching user summary by city: {}", city);
@@ -305,4 +363,5 @@ public class UserService {
                 "FROM User u JOIN u.department d";
         return entityManager.createQuery(jpql, UserDeptDTO.class).getResultList();
     }
+
 }

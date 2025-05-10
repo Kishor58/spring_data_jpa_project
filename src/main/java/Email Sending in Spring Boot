@@ -1,0 +1,55 @@
+1. What is Email Sending in Spring Boot?
+In Spring Boot, you can send emails easily by using Spring’s JavaMailSender interface,
+which is part of the spring-boot-starter-mail module. This interface provides the necessary
+methods to send basic or HTML emails, including sending attachments or complex content.
+
+2. Email Flow in Spring Boot
+The general flow to send an email is:
+
+Configure the email provider settings (SMTP server).
+
+Set up a JavaMailSender to send emails.
+
+Create an Email Service class that will handle sending the email.
+
+Call the Email Service after certain events, such as user registration
+
+3. Add Required Dependencies
+To start with email functionality, you need to add a dependency for Spring Boot Starter Mail in your pom.xml file.
+
+Add Dependency for Email (SMTP)
+This dependency allows you to send emails using Spring Boot.
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-mail</artifactId>
+</dependency>
+
+Explanation: This dependency includes everything necessary to configure and send emails in Spring Boot,
+such as JavaMail and Spring’s JavaMailSender.
+
+4. Configure SMTP Server in application.properties
+You need to configure the SMTP server settings in your application.properties or application.yml file.
+These settings tell Spring Boot which mail server to use to send emails.
+
+SMTP Configuration Example for Gmail
+If you are using Gmail, you need to configure your SMTP server and login details.
+Add the following lines to your application.properties file:
+
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com       # Your email address
+spring.mail.password=your-email-password       # Your email password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.ssl.trust=smtp.gmail.com
+
+Explanation:
+
+spring.mail.host: The SMTP server to send emails. Gmail uses smtp.gmail.com.
+
+spring.mail.port: The SMTP port to communicate. For Gmail, it is 587 for TLS (Transport Layer Security).
+
+spring.mail.username and spring.mail.password: Your Gmail account credentials. If you use Gmail with two-factor authentication, you need to use an App Password instead of your main Gmail password.
+
+Important: For Gmail, make sure to enable "Less Secure Apps" or use an App Password for accounts with 2-step verification.
+

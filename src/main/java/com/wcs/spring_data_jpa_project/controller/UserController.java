@@ -5,6 +5,8 @@ import com.wcs.spring_data_jpa_project.dto.LoginRequest;
 import com.wcs.spring_data_jpa_project.dto.RegisterRequest;
 import com.wcs.spring_data_jpa_project.dto.UserDeptDTO;
 import com.wcs.spring_data_jpa_project.dto.UserSummaryDTO;
+import com.wcs.spring_data_jpa_project.exception.InvalidCredentialsException;
+import com.wcs.spring_data_jpa_project.exception.InvalidInputException;
 import com.wcs.spring_data_jpa_project.model.User;
 import com.wcs.spring_data_jpa_project.service.core.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,25 +24,33 @@ import java.util.List;
 public class UserController {
 
     @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-
-    @PostMapping("/register")
-    public ResponseEntity<User> registerUser(@RequestBody @Valid RegisterRequest request) {
-        log.info("Registering user: {}", request.getEmail());
-        User registeredUser = userService.registerUser(request);
-        return new ResponseEntity<>(registeredUser, HttpStatus.CREATED);
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
 
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<User>> registerUser(@RequestBody RegisterRequest request) {
+        try {
+            User user = userService.registerUser(request);  // Call the registerUser method from UserService
+            ApiResponse<User> response = new ApiResponse<>("User registered successfully", user);
+            return ResponseEntity.ok(response);
+        } catch (InvalidInputException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
+        }
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@RequestBody @Valid LoginRequest request) {
-        log.info("Login attempt: {}", request.getEmail());
-        boolean success = userService.loginUser(request);
-        if (success) {
-            return ResponseEntity.ok("Login successful");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+    public ResponseEntity<ApiResponse<String>> loginUser(@RequestBody LoginRequest request) {
+        try {
+            boolean isAuthenticated = userService.loginUser(request);  // Call the loginUser method from UserService
+            String message = isAuthenticated ? "Login successful" : "Login failed";
+            return ResponseEntity.ok(new ApiResponse<>(message, null));
+        } catch (InvalidCredentialsException e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
         }
     }
 
