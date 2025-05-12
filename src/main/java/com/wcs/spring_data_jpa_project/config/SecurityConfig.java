@@ -19,13 +19,29 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Require authentication only for register and login
-                        .requestMatchers("/users/register", "/users/login").authenticated()
-
-                        // allow every api without authentication
-                        .anyRequest().permitAll()
+                        .requestMatchers( "/users/register",
+                                "/users/login",
+                                "/users/save",
+                                "/users/getUser/**",
+                                "/users/updateUser/**",
+                                "/users/deleteUser/**",
+                                "/users/assignUserToDepartment",
+                                "/users/getAllUsers",
+                                "/users/city/**",
+                                "/users/countByEmailDomain/**",
+                                "/users/native",
+                                "/users/getUserByCity/**",
+                                "/users/updateEmailByCity",
+                                "/users/deleteByCity",
+                                "/users/filterByCityAndContact",
+                                "/users/getUserSortedByNameAsc",
+                                "/users/getUsersSortedByEmailDesc",
+                                "/users/paginated",
+                                "/users/with-department",
+                                "/users/by-department/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()); // Use HTTP Basic Auth only for login/register
+                .httpBasic(Customizer.withDefaults()); // Use Customizer to avoid deprecation
 
         return http.build();
     }
