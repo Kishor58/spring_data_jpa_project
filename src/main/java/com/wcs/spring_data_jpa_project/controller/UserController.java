@@ -9,6 +9,7 @@ import com.wcs.spring_data_jpa_project.exception.InvalidCredentialsException;
 import com.wcs.spring_data_jpa_project.exception.InvalidInputException;
 import com.wcs.spring_data_jpa_project.model.User;
 import com.wcs.spring_data_jpa_project.service.core.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = "http://localhost:5173")  // allow your Vite app
 @Slf4j
 public class UserController {
 
@@ -32,6 +34,8 @@ public class UserController {
     }
 
 
+    @Operation(summary = "User Login", description = "Authenticate user using email and password.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> registerUser(@RequestBody RegisterRequest request) {
         try {
@@ -54,6 +58,16 @@ public class UserController {
         }
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> dynamicSearch(@RequestParam String keyword) {
+        try {
+            // Call service to perform dynamic search based on the keyword
+            List<User> users = userService.dynamicSearch(keyword);
+            return new ResponseEntity<>(users, HttpStatus.OK);
+        } catch (Exception ex) {
+            return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST); // You can customize the exception handling as per your project needs
+        }
+    }
     @PostMapping("/save")
     public ResponseEntity<ApiResponse<User>> createUser(@Valid @RequestBody User user) {
         log.info("Creating new user: {}", user.getUserName());

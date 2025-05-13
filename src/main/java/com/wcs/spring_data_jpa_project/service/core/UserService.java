@@ -5,12 +5,14 @@ import com.wcs.spring_data_jpa_project.dto.RegisterRequest;
 import com.wcs.spring_data_jpa_project.dto.UserDeptDTO;
 import com.wcs.spring_data_jpa_project.dto.UserSummaryDTO;
 import com.wcs.spring_data_jpa_project.exception.*;
+//import com.wcs.spring_data_jpa_project.jwt.JwtService;
 import com.wcs.spring_data_jpa_project.model.Department;
 import com.wcs.spring_data_jpa_project.model.User;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.flywaydb.core.internal.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,9 @@ public class UserService {
 
     @Autowired
     private EmailService emailService;
+
+//    @Autowired
+//    private JwtService jwtService;
 
 
     public User registerUser(RegisterRequest request) {
@@ -104,6 +109,27 @@ public class UserService {
             log.error("Login failed - User not found: {}", request.getEmail());
             throw new InvalidCredentialsException("Invalid email or password");
         }
+    }
+//    Fuzzy Search is not done in this method means for searching we have to enter full word
+    public List<User> dynamicSearch(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            log.error("Search keyword is invalid: {}", keyword);
+            throw new InvalidInputException("Search keyword must not be null or empty");
+        }
+
+        log.debug("Performing dynamic search with keyword: {}", keyword);
+
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<User> cq = cb.createQuery(User.class);
+        Root<User> root = cq.from(User.class);
+
+        Predicate userNamePredicate = cb.like(cb.lower(root.get("userName")), "%" + keyword.toLowerCase() + "%");
+        Predicate emailPredicate = cb.like(cb.lower(root.get("email")), "%" + keyword.toLowerCase() + "%");
+        Predicate addressPredicate = cb.like(cb.lower(root.get("address")), "%" + keyword.toLowerCase() + "%");
+
+        cq.where(cb.or(userNamePredicate, emailPredicate, addressPredicate));
+
+        return entityManager.createQuery(cq).getResultList();
     }
 
     public void saveUser(User user) {
@@ -260,14 +286,18 @@ public class UserService {
         CriteriaQuery<User> cq = cb.createQuery(User.class);
         Root<User> root = cq.from(User.class);
 
-        cq.select(root)
-                .where(cb.and(
-                        cb.equal(root.get("address"), city),
-                        cb.like(root.get("contact"), contact + "%")
-                ));
+        Predicate finalPredicate = cb.conjunction(); //cb.conjunction() starts with a true predicate (like WHERE 1=1) to allow chaining.
 
+        if (city != null && !city.isBlank()) {
+            finalPredicate = cb.and(finalPredicate, cb.equal(root.get("address"), city));
+        }
+        if (contact != null && !contact.isBlank()) {
+            finalPredicate = cb.and(finalPredicate, cb.equal(root.get("contact"), contact));
+        }
+        cq.select(root).where(finalPredicate);
         return entityManager.createQuery(cq).getResultList();
     }
+
 
     public List<User> getUsersSortedByNameAsc() {
         log.debug("Sorting users by name ascending");
@@ -296,12 +326,11 @@ public class UserService {
         Root<User> root = cq.from(User.class);
         cq.select(root);
 
-        int offset = (pageNo - 1) * pageSize;
+        TypedQuery<User> query = entityManager.createQuery(cq);
+        query.setFirstResult((pageNo - 1) * pageSize);
+        query.setMaxResults(pageSize);
 
-        return entityManager.createQuery(cq)
-                .setFirstResult(offset)
-                .setMaxResults(pageSize)
-                .getResultList();
+        return query.getResultList();
     }
 
     public List<User> getUsersWithDepartments() {
