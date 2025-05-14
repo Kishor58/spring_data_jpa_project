@@ -6,7 +6,9 @@ import com.wcs.spring_data_jpa_project.dto.UserDeptDTO;
 import com.wcs.spring_data_jpa_project.dto.UserSummaryDTO;
 import com.wcs.spring_data_jpa_project.exception.*;
 //import com.wcs.spring_data_jpa_project.jwt.JwtService;
+import com.wcs.spring_data_jpa_project.jwt.JwtService;
 import com.wcs.spring_data_jpa_project.model.Department;
+import com.wcs.spring_data_jpa_project.model.Role;
 import com.wcs.spring_data_jpa_project.model.User;
 import jakarta.persistence.*;
 import jakarta.persistence.criteria.*;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -37,8 +40,8 @@ public class UserService {
     @Autowired
     private EmailService emailService;
 
-//    @Autowired
-//    private JwtService jwtService;
+    @Autowired
+    private JwtService jwtService;
 
 
     public User registerUser(RegisterRequest request) {
@@ -47,6 +50,7 @@ public class UserService {
             throw new InvalidInputException("Registration request or email cannot be null");
         }
 
+        // Check if the email already exists in the system
         String emailCheckQuery = "SELECT COUNT(u) FROM User u WHERE u.email = :email";
         Long count = entityManager.createQuery(emailCheckQuery, Long.class)
                 .setParameter("email", request.getEmail())
@@ -57,6 +61,7 @@ public class UserService {
             throw new DuplicateResourceException("Email already registered");
         }
 
+        // Create a new user
         User user = new User();
         user.setUserName(request.getUserName());
         user.setEmail(request.getEmail());
@@ -64,10 +69,30 @@ public class UserService {
         user.setContact(request.getContact());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
+        // Assign role based on the provided role in request (default to "ROLE_USER" if not provided)
+        String roleName = request.getRole() != null ? request.getRole() : "ROLE_USER";
+
+        // Retrieve the role by name, or create it if it doesn't exist
+        Role role = entityManager.createQuery("SELECT r FROM Role r WHERE r.name = :roleName", Role.class)
+                .setParameter("roleName", roleName)
+                .getResultStream()
+                .findFirst()
+                .orElseGet(() -> {
+                    // Create new role if not found
+                    Role newRole = new Role();
+                    newRole.setName(roleName);
+                    entityManager.persist(newRole);
+                    return newRole;
+                });
+
+        // Set the role for the user
+        user.setRoles(Collections.singleton(role));
+
+        // Persist the user in the database
         entityManager.persist(user);
         log.info("User registered successfully: {}", user.getEmail());
 
-        // ✅ Send registration email
+        // Send a welcome email
         emailService.sendEmail(
                 user.getEmail(),
                 "Welcome to Our App!",
@@ -77,7 +102,9 @@ public class UserService {
         return user;
     }
 
-    public boolean loginUser(LoginRequest request) {
+
+
+    public String loginUser(LoginRequest request) {
         if (request == null || request.getEmail() == null || request.getPassword() == null) {
             log.error("Invalid login request: {}", request);
             throw new InvalidInputException("Email and password must not be null");
@@ -93,14 +120,9 @@ public class UserService {
             if (matched) {
                 log.info("Login successful for: {}", request.getEmail());
 
-                // ✅ Send login notification email
-                emailService.sendEmail(
-                        user.getEmail(),
-                        "Login Notification",
-                        "Hi " + user.getUserName() + ",\n\nYou have successfully logged into your account."
-                );
-
-                return true;
+                // ✅ Generate JWT token
+                String token = jwtService.generateToken(user.getEmail());
+                return token;
             } else {
                 log.warn("Login failed - Incorrect password for: {}", request.getEmail());
                 throw new InvalidCredentialsException("Invalid email or password");

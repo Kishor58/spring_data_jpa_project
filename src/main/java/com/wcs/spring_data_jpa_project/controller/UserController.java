@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -34,8 +35,8 @@ public class UserController {
     }
 
 
-    @Operation(summary = "User Login", description = "Authenticate user using email and password.")
-    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful")
+    @Operation(summary = "User Registration", description = "Register a new user and send a welcome email.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User registered successfully")
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<User>> registerUser(@RequestBody RegisterRequest request) {
         try {
@@ -47,16 +48,18 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "User Login", description = "Authenticate user using email and password.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<String>> loginUser(@RequestBody LoginRequest request) {
         try {
-            boolean isAuthenticated = userService.loginUser(request);  // Call the loginUser method from UserService
-            String message = isAuthenticated ? "Login successful" : "Login failed";
-            return ResponseEntity.ok(new ApiResponse<>(message, null));
+            String token = userService.loginUser(request);  // Call the loginUser method from UserService
+            return ResponseEntity.ok(new ApiResponse<>("Login successful", token));
         } catch (InvalidCredentialsException e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>(e.getMessage(), null));
         }
     }
+
 
     @GetMapping("/search")
     public ResponseEntity<List<User>> dynamicSearch(@RequestParam String keyword) {
@@ -75,7 +78,7 @@ public class UserController {
         ApiResponse<User> response = new ApiResponse<>("User created successfully", user);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
-
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/getUser/{id}")
     public ResponseEntity<ApiResponse<User>> getUserById(@PathVariable Long id) {
         log.info("Fetching user with ID: {}", id);
